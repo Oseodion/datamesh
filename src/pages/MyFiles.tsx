@@ -25,7 +25,6 @@ export default function MyFiles() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(false)
   const [downloading, setDownloading] = useState<string | null>(null)
-  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     if (!account) return
