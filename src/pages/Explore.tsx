@@ -73,14 +73,20 @@ export default function Explore() {
       let offset = 0
       for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
       const url = URL.createObjectURL(new Blob([uint8]))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = getFileName(blob.name)
-      a.target = '_blank'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent)
+      if (isMobile) {
+        window.open(url, '_blank')
+        setTimeout(() => URL.revokeObjectURL(url), 5000)
+      } else {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = getFileName(blob.name)
+        a.target = '_blank'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
     } catch (err) {
       console.error('Download failed:', err)
     }
