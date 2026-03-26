@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbynetClient as shelbyClient } from '../lib/shelby'
+import { shelbyClient } from '../lib/shelby'
 
 export default function Earnings() {
   const { connected, account } = useWallet()

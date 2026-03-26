@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbynetClient as shelbyClient } from '../lib/shelby'
+import { shelbyClient } from '../lib/shelby'
 
 const colorForType = (name: string) => {
   const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
