@@ -138,27 +138,28 @@ export default function MyFiles() {
                 <div style={{ fontSize: 12, color: 'var(--muted)' }}>{ext} · {formatSize(blob.size)}</div>
               </div>
 
-              {blob.isWritten ? (
-                <button onClick={() => handleDownload(blob)} disabled={isDownloading} style={{
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                {blob.isWritten && (
+                  <button onClick={() => handleDownload(blob)} disabled={isDownloading} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    background: isDownloading ? 'var(--surface2)' : 'var(--accent)',
+                    color: isDownloading ? 'var(--muted)' : 'var(--on-accent)',
+                    border: 'none', cursor: isDownloading ? 'not-allowed' : 'pointer',
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    {isDownloading ? 'Downloading...' : 'Download'}
+                  </button>
+                )}
+                <a href={`https://explorer.shelby.xyz/testnet/account/${account?.address?.toString()}`} target="_blank" rel="noopener noreferrer" style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                  background: isDownloading ? 'var(--surface2)' : 'var(--accent)',
-                  color: isDownloading ? 'var(--muted)' : 'var(--on-accent)',
-                  border: 'none', cursor: isDownloading ? 'not-allowed' : 'pointer',
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
-                  {isDownloading ? 'Downloading...' : 'Download'}
-                </button>
-              ) : (
-                <a href={`https://explorer.shelby.xyz/shelbynet/account/${account?.address?.toString()}`} target="_blank" rel="noopener noreferrer" style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                  background: 'var(--surface2)', color: '#f59e0b',
-                  border: '1px solid #f59e0b30', cursor: 'pointer', textDecoration: 'none',
+                  background: 'var(--surface2)', color: '#60a5fa',
+                  border: '1px solid #60a5fa30', cursor: 'pointer', textDecoration: 'none',
                 }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
@@ -167,7 +168,7 @@ export default function MyFiles() {
                   </svg>
                   View on Explorer
                 </a>
-              )}
+              </div>
             </div>
           )
         })}
