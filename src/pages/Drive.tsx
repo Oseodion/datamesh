@@ -25,7 +25,7 @@ export default function Drive() {
 
   if (!connected) {
     return (
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
+      <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
         <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
@@ -41,7 +41,7 @@ export default function Drive() {
   const totalMB = (totalBytes / 1024 / 1024).toFixed(1)
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
+    <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32, flexWrap: 'wrap' as const, gap: 16 }}>
         <div>
           <h1 style={{ color: 'var(--text)', fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: -0.5 }}>Drive</h1>

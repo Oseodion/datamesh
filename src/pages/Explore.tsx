@@ -17,6 +17,28 @@ const getFileName = (fullName: string) => {
   return parts[parts.length - 1] || fullName
 }
 
+type TypeFilter = 'all' | 'images' | 'documents' | 'video' | 'other'
+
+const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'images', label: 'Images' },
+  { key: 'documents', label: 'Documents' },
+  { key: 'video', label: 'Video' },
+  { key: 'other', label: 'Other' },
+]
+
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']
+const DOC_EXTS = ['pdf', 'doc', 'docx', 'txt', 'csv', 'xlsx', 'pptx', 'ppt', 'json', 'md', 'vcf']
+const VIDEO_EXTS = ['mp4', 'mov', 'avi', 'mkv', 'webm']
+
+const categoryForFile = (name: string): TypeFilter => {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (IMAGE_EXTS.includes(ext)) return 'images'
+  if (DOC_EXTS.includes(ext)) return 'documents'
+  if (VIDEO_EXTS.includes(ext)) return 'video'
+  return 'other'
+}
+
 const PAGE_SIZE = 50
 
 export default function Explore() {
@@ -28,6 +50,7 @@ export default function Explore() {
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [priceFilter, setPriceFilter] = useState<'free' | 'paid'>('free')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   useEffect(() => {
@@ -51,9 +74,12 @@ export default function Explore() {
       .catch(err => { console.error('Load error:', err); setError(true); setIsLoading(false) })
   }, [page])
 
-  const filtered = blobs.filter(blob =>
-    getFileName(blob.name).toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = blobs.filter(blob => {
+    const fileName = getFileName(blob.name)
+    if (!fileName.toLowerCase().includes(search.toLowerCase())) return false
+    if (typeFilter !== 'all' && categoryForFile(fileName) !== typeFilter) return false
+    return true
+  })
 
   const handleDownload = async (blob: any) => {
     const key = blob.name
@@ -99,7 +125,7 @@ export default function Explore() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
+    <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ color: 'var(--text)', fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: -0.5 }}>Marketplace</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>Browse files stored on the Shelby decentralized network</p>
@@ -137,11 +163,22 @@ export default function Explore() {
 
       {priceFilter === 'free' && (
         <>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' as const }}>
+            {TYPE_FILTERS.map(f => (
+              <button key={f.key} onClick={() => setTypeFilter(f.key)} style={{
+                padding: '7px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                background: typeFilter === f.key ? 'var(--accent)' : 'var(--surface)',
+                color: typeFilter === f.key ? 'var(--on-accent)' : 'var(--muted)',
+                border: '1px solid var(--border)', cursor: 'pointer',
+              }}>{f.label}</button>
+            ))}
+          </div>
+
           {isLoading && <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '64px 0', fontSize: 14 }}>Loading files from Shelby network...</div>}
           {error && <div style={{ textAlign: 'center', color: '#f87171', padding: '64px 0', fontSize: 14 }}>Could not load files. Check your connection.</div>}
           {!isLoading && !error && filtered.length === 0 && <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '64px 0', fontSize: 14 }}>No files found.</div>}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+          <div className="file-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
             {filtered.map(blob => {
               const fileName = getFileName(blob.name)
               const color = colorForType(fileName)

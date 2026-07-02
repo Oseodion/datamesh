@@ -15,7 +15,7 @@ export default function Earnings() {
 
   if (!connected) {
     return (
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
+      <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
         <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
@@ -32,7 +32,7 @@ export default function Earnings() {
   const totalMB = (totalBytes / 1024 / 1024).toFixed(1)
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
+    <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ color: 'var(--text)', fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: -0.5 }}>Earnings</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14 }}>Revenue from your files being downloaded</p>

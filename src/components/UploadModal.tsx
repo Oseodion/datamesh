@@ -74,10 +74,11 @@ export default function UploadModal({ onClose }: Props) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20,
     }} onClick={onClose}>
-      <div style={{
+      <div className="upload-modal-card" style={{
         background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: 18, width: '100%', maxWidth: 480,
         padding: 36, position: 'relative',
+        maxHeight: '88vh', overflowY: 'auto' as const,
         display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 16,
       }} onClick={e => e.stopPropagation()}>
 
@@ -173,6 +174,12 @@ export default function UploadModal({ onClose }: Props) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {walletConnected && files.length > 1 && (
+              <div style={{ fontSize: 13, color: '#f59e0b', background: '#f59e0b14', border: '1px solid #f59e0b30', borderRadius: 10, padding: '10px 16px', width: '100%', textAlign: 'center' as const, lineHeight: 1.5 }}>
+                Heads up: multi-file uploads are unstable on Shelby testnet. We recommend uploading one file at a time. You can still proceed if you want.
               </div>
             )}
 

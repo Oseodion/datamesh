@@ -19,6 +19,57 @@ const formatSize = (bytes: number) => {
   return (bytes / 1024).toFixed(1) + ' KB'
 }
 
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+const isImageFile = (name: string) => IMAGE_EXTS.includes(name.split('.').pop()?.toLowerCase() || '')
+
+function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl: string | null = null
+    const load = async () => {
+      try {
+        const ownerBytes = blob.owner?.data || {}
+        const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
+        const result = await shelbyClient.download({ account, blobName: blob.blobNameSuffix })
+        const reader = result.readable.getReader()
+        const chunks: Uint8Array[] = []
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          chunks.push(value)
+        }
+        const uint8 = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0))
+        let offset = 0
+        for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
+        objectUrl = URL.createObjectURL(new Blob([uint8]))
+        if (cancelled) URL.revokeObjectURL(objectUrl)
+        else setUrl(objectUrl)
+      } catch (err) {
+        console.error('Thumbnail load failed:', err)
+        if (!cancelled) setFailed(true)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [blob])
+
+  if (failed) return null
+
+  return url ? (
+    <img src={url} alt={fileName} style={{ width: '100%', height: 140, objectFit: 'cover' as const, borderRadius: 10, border: '1px solid var(--border)', display: 'block' }} />
+  ) : (
+    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
+      Loading preview...
+    </div>
+  )
+}
+
 export default function MyFiles() {
   const { connected, account } = useWallet()
   const [blobs, setBlobs] = useState<any[]>([])
@@ -77,7 +128,7 @@ export default function MyFiles() {
 
   if (!connected) {
     return (
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
+      <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', minHeight: 400, textAlign: 'center' as const }}>
         <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 12V8H6a2 2 0 0 1 0-4h14v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>
@@ -90,7 +141,7 @@ export default function MyFiles() {
   }
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
+    <div className="page-wrap" style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 28px' }}>
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ color: 'var(--text)', fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: -0.5 }}>My Files</h1>
         <p style={{ color: 'var(--muted)', fontSize: 14, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -104,7 +155,7 @@ export default function MyFiles() {
         <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '64px 0', fontSize: 14 }}>You have not uploaded any files yet.</div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+      <div className="file-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
         {blobs.map(blob => {
           const fileName = blob.blobNameSuffix || blob.name
           const color = colorForType(fileName)
@@ -132,6 +183,10 @@ export default function MyFiles() {
                   : <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', background: '#f59e0b18', border: '1px solid #f59e0b30', padding: '3px 8px', borderRadius: 20 }}>Pending</span>
                 }
               </div>
+
+              {blob.isWritten && isImageFile(fileName) && (
+                <ImageThumbnail blob={blob} fileName={fileName} />
+              )}
 
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{fileName}</div>

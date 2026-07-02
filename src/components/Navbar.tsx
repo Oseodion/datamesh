@@ -47,7 +47,7 @@ export default function Navbar() {
         borderBottom: '1px solid var(--border)',
         backdropFilter: 'blur(20px)',
       }}>
-        <div style={{
+        <div className="nav-inner" style={{
           maxWidth: 1280, margin: '0 auto', padding: '0 28px',
           height: 58, display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 16,
