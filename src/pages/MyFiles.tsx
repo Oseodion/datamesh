@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbyClient } from '../lib/shelby'
+import { Network } from '@aptos-labs/ts-sdk'
+import { getShelbyAccountExplorerUrl } from '@shelby-protocol/sdk/browser'
+import { shelbynetClient } from '../lib/shelby'
 
 const colorForType = (name: string) => {
   const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
@@ -33,7 +35,7 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
       try {
         const ownerBytes = blob.owner?.data || {}
         const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
-        const result = await shelbyClient.download({ account, blobName: blob.blobNameSuffix })
+        const result = await shelbynetClient.download({ account, blobName: blob.blobNameSuffix })
         const reader = result.readable.getReader()
         const chunks: Uint8Array[] = []
         while (true) {
@@ -80,7 +82,7 @@ export default function MyFiles() {
   useEffect(() => {
     if (!account) return
     setIsLoading(true)
-    shelbyClient.coordination.getAccountBlobs({ account: account.address.toString() })
+    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
       .then(data => {
         setBlobs((data || []).filter((b: any) => !b.isDeleted))
         setIsLoading(false)
@@ -94,7 +96,7 @@ export default function MyFiles() {
     try {
       const ownerBytes = blob.owner?.data || {}
       const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
-      const result = await shelbyClient.download({ account, blobName: blob.blobNameSuffix })
+      const result = await shelbynetClient.download({ account, blobName: blob.blobNameSuffix })
       const reader = result.readable.getReader()
       const chunks: Uint8Array[] = []
       while (true) {
@@ -210,7 +212,7 @@ export default function MyFiles() {
                     {isDownloading ? 'Downloading...' : 'Download'}
                   </button>
                 )}
-                <a href={`https://explorer.shelby.xyz/testnet/account/${account?.address?.toString()}`} target="_blank" rel="noopener noreferrer" style={{
+                <a href={getShelbyAccountExplorerUrl(Network.SHELBYNET, account?.address?.toString() ?? '')} target="_blank" rel="noopener noreferrer" style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                   background: 'var(--surface2)', color: '#60a5fa',

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import CLIGuideModal from '../components/CLIGuideModal'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbyClient } from '../lib/shelby'
+import { shelbynetClient } from '../lib/shelby'
 
 const typeColor: Record<string, string> = {
   PDF: '#f472b6', ZIP: '#60a5fa', CSV: '#f472b6',
@@ -18,7 +18,7 @@ export default function Drive() {
   useEffect(() => {
     if (!account) return
     setIsLoading(true)
-    shelbyClient.coordination.getAccountBlobs({ account: account.address.toString() })
+    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
       .then(data => { setBlobs((data || []).filter((b: any) => !b.isDeleted)); setIsLoading(false) })
       .catch(() => { setError(true); setIsLoading(false) })
   }, [account])

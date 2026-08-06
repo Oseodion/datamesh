@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { shelbyClient } from '../lib/shelby'
+import { shelbynetClient } from '../lib/shelby'
 
 const colorForType = (name: string) => {
   const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
@@ -62,7 +62,7 @@ export default function Explore() {
   useEffect(() => {
     setIsLoading(true)
     setError(false)
-    shelbyClient.coordination.getBlobs({
+    shelbynetClient.coordination.getBlobs({
       pagination: { limit: PAGE_SIZE + 1, offset: page * PAGE_SIZE },
     })
       .then(data => {
@@ -87,7 +87,7 @@ export default function Explore() {
     try {
       const ownerBytes = blob.owner?.data || {}
       const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
-      const result = await shelbyClient.download({ account, blobName: blob.blobNameSuffix })
+      const result = await shelbynetClient.download({ account, blobName: blob.blobNameSuffix })
       const reader = result.readable.getReader()
       const chunks: Uint8Array[] = []
       while (true) {

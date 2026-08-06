@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
-import { shelbyClient } from '../lib/shelby'
+import { shelbynetClient } from '../lib/shelby'
 
 export default function StatsBar() {
   const [fileCount, setFileCount] = useState<string>('...')
   const [dataStored, setDataStored] = useState<{ value: string, unit: string }>({ value: '...', unit: '' })
 
   useEffect(() => {
-    shelbyClient.coordination.getBlobsCount({ where: { is_written: { _eq: 1 as any }, is_deleted: { _eq: 0 as any } } })
+    shelbynetClient.coordination.getBlobsCount({ where: { is_persisted: { _eq: 1 as any }, is_deleted: { _eq: 0 as any } } })
       .then(count => setFileCount(count.toLocaleString()))
       .catch(() => setFileCount('—'))
 
-    shelbyClient.coordination.getTotalBlobsSize({ where: { is_written: { _eq: 1 as any }, is_deleted: { _eq: 0 as any } } })
+    shelbynetClient.coordination.getTotalBlobsSize({ where: { is_persisted: { _eq: 1 as any }, is_deleted: { _eq: 0 as any } } })
       .then(bytes => {
         if (bytes > 1024 * 1024 * 1024) setDataStored({ value: (bytes / 1024 / 1024 / 1024).toFixed(2), unit: 'GB' })
         else setDataStored({ value: (bytes / 1024 / 1024).toFixed(1), unit: 'MB' })

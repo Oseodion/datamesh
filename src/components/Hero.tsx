@@ -37,7 +37,7 @@ export default function Hero() {
               width: 6, height: 6, borderRadius: '50%',
               background: 'var(--accent)', display: 'inline-block',
             }} />
-            Live on Shelby Testnet
+            Live on Shelby Shelbynet
           </div>
 
           <h1 className="hero-h1" style={{

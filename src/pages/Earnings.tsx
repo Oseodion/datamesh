@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbyClient } from '../lib/shelby'
+import { shelbynetClient } from '../lib/shelby'
 
 export default function Earnings() {
   const { connected, account } = useWallet()
@@ -8,7 +8,7 @@ export default function Earnings() {
 
   useEffect(() => {
     if (!account) return
-    shelbyClient.coordination.getAccountBlobs({ account: account.address.toString() })
+    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
       .then(data => setBlobs((data || []).filter((b: any) => !b.isDeleted)))
       .catch(() => {})
   }, [account])
