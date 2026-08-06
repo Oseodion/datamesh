@@ -6,8 +6,10 @@ const colorForType = (name: string) => {
   const map: Record<string, string> = {
     CSV: '#f472b6', PNG: '#4ade80', ZIP: '#60a5fa', PDF: '#f472b6',
     MP4: '#a78bfa', JSON: '#4ade80', TAR: '#60a5fa', BIN: '#a78bfa',
-    JPEG: '#4ade80', JPG: '#4ade80', TXT: '#60a5fa', VCF: '#f472b6',
-    PPTX: '#f472b6', DOCX: '#60a5fa', XLSX: '#4ade80',
+    JPEG: '#4ade80', JPG: '#4ade80', GIF: '#4ade80', WEBP: '#4ade80',
+    TXT: '#60a5fa', VCF: '#f472b6', PPTX: '#f472b6', DOCX: '#60a5fa', XLSX: '#4ade80',
+    JS: '#a78bfa', JSX: '#a78bfa', TS: '#a78bfa', TSX: '#a78bfa', PY: '#a78bfa',
+    GZ: '#60a5fa', RAR: '#60a5fa', '7Z': '#60a5fa',
   }
   return map[ext] || '#8a7a70'
 }
@@ -15,6 +17,119 @@ const colorForType = (name: string) => {
 const getFileName = (fullName: string) => {
   const parts = fullName.split('/')
   return parts[parts.length - 1] || fullName
+}
+
+type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
+
+const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
+const CODE_EXTS = ['js', 'jsx', 'ts', 'tsx', 'py', 'json']
+const ARCHIVE_EXTS = ['zip', 'tar', 'gz', 'rar', '7z']
+
+const iconKindForFile = (name: string): IconKind => {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (PREVIEW_IMAGE_EXTS.includes(ext)) return 'image'
+  if (ext === 'pdf') return 'pdf'
+  if (CODE_EXTS.includes(ext)) return 'code'
+  if (ARCHIVE_EXTS.includes(ext)) return 'archive'
+  return 'other'
+}
+
+function FileIcon({ kind, color, size = 18 }: { kind: IconKind; color: string; size?: number }) {
+  const props = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (kind) {
+    case 'image':
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      )
+    case 'pdf':
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+      )
+    case 'code':
+      return (
+        <svg {...props}>
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+      )
+    case 'archive':
+      return (
+        <svg {...props}>
+          <rect x="2" y="3" width="20" height="5" rx="1"/>
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+          <path d="M10 12h4"/>
+        </svg>
+      )
+    default:
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        </svg>
+      )
+  }
+}
+
+function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl: string | null = null
+    const load = async () => {
+      try {
+        const ownerBytes = blob.owner?.data || {}
+        const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
+        const result = await shelbynetClient.download({ account, blobName: blob.blobNameSuffix })
+        const reader = result.readable.getReader()
+        const chunks: Uint8Array[] = []
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          chunks.push(value)
+        }
+        const uint8 = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0))
+        let offset = 0
+        for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
+        objectUrl = URL.createObjectURL(new Blob([uint8]))
+        if (cancelled) URL.revokeObjectURL(objectUrl)
+        else setUrl(objectUrl)
+      } catch (err) {
+        console.error('Thumbnail load failed:', err)
+        if (!cancelled) setFailed(true)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [blob])
+
+  if (failed) {
+    return (
+      <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <FileIcon kind="image" color={colorForType(fileName)} size={28} />
+      </div>
+    )
+  }
+
+  return url ? (
+    <img src={url} alt={fileName} style={{ width: '100%', height: 140, objectFit: 'cover' as const, borderRadius: 10, border: '1px solid var(--border)', display: 'block' }} />
+  ) : (
+    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
+      Loading preview...
+    </div>
+  )
 }
 
 type TypeFilter = 'all' | 'images' | 'documents' | 'video' | 'other'
@@ -183,6 +298,7 @@ export default function Explore() {
               const fileName = getFileName(blob.name)
               const color = colorForType(fileName)
               const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE'
+              const kind = iconKindForFile(fileName)
               const sizeKB = blob.size ? blob.size > 1024 * 1024
                 ? (blob.size / 1024 / 1024).toFixed(1) + ' MB'
                 : (blob.size / 1024).toFixed(1) + ' KB'
@@ -199,14 +315,19 @@ export default function Explore() {
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 10, background: color + '18', border: '1px solid ' + color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      </svg>
+                  {kind === 'image' ? (
+                    <div style={{ position: 'relative' as const }}>
+                      <ImageThumbnail blob={blob} fileName={fileName} />
+                      <span style={{ position: 'absolute' as const, top: 8, right: 8, fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#0f0f0fcc', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#4ade8018', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
-                  </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 10, background: color + '18', border: '1px solid ' + color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <FileIcon kind={kind} color={color} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#4ade8018', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
+                    </div>
+                  )}
 
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{fileName}</div>

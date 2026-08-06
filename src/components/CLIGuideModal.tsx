@@ -24,13 +24,12 @@ export default function CLIGuideModal({ onClose }: Props) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
-          <Step num={1} title="Set up pnpm globals (first time only)" code="pnpm setup && source ~/.zshrc" />
-          <Step num={2} title="Install the Shelby CLI" code="pnpm add -g @shelby-protocol/cli" />
-          <Step num={3} title="Initialize Shelby and follow the prompts" code="shelby init" />
-          <Step num={4} title="Fund your account with ShelbyUSD (opens browser)" code="shelby faucet" />
-          <Step num={5} title="On the faucet page, also click 'Aptos Tokens' to get APT for gas fees — use the address shown in your terminal" />
-          <Step num={6} title="Upload your file" code='shelby upload ~/path/to/yourfile.png images/yourfile.png -e "in 30 days" --assume-yes' />
-          <Step num={7} title="Your file will appear in My Files once written to the network" />
+          <Step num={1} title="Install the Shelby CLI" code="pnpm add -g @shelby-protocol/cli" />
+          <Step num={2} title="Initialize Shelby and follow the prompts" code="shelby init" />
+          <Step num={3} title="Fund your account with ShelbyUSD (opens browser)" code="shelby faucet" />
+          <Step num={4} title="On the faucet page, also click 'Aptos Tokens' to get APT for gas fees — use the address shown in your terminal" />
+          <Step num={5} title="Upload your file" code='shelby upload ~/path/to/yourfile.png images/yourfile.png -e "in 30 days" --assume-yes' />
+          <Step num={6} title="Your file will appear in My Files once written to the network" />
         </div>
 
         <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
