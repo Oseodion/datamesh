@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Order_By } from '@shelby-protocol/sdk/browser'
 import { shelbynetClient } from '../lib/shelby'
+import FileDetailModal from '../components/FileDetailModal'
 
 const colorForType = (name: string) => {
   const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
@@ -116,6 +117,7 @@ export default function Explore() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [selectedBlob, setSelectedBlob] = useState<any | null>(null)
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400)
@@ -268,11 +270,11 @@ export default function Explore() {
               const isDownloading = downloading === blob.name
 
               return (
-                <div key={blob.name} style={{
+                <div key={blob.name} onClick={() => setSelectedBlob(blob)} style={{
                   background: 'var(--surface)', border: '1px solid var(--border)',
                   borderRadius: 14, padding: '20px',
                   display: 'flex', flexDirection: 'column' as const, gap: 12,
-                  transition: 'border-color .15s',
+                  transition: 'border-color .15s', cursor: 'pointer',
                 }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -289,7 +291,7 @@ export default function Explore() {
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{ext} · {sizeKB}</div>
                   </div>
 
-                  <button onClick={() => handleDownload(blob)} disabled={isDownloading} style={{
+                  <button onClick={e => { e.stopPropagation(); handleDownload(blob) }} disabled={isDownloading} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                     background: isDownloading ? 'var(--surface2)' : 'var(--accent)',
@@ -356,6 +358,15 @@ export default function Explore() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
+      )}
+
+      {selectedBlob && (
+        <FileDetailModal
+          blob={selectedBlob}
+          onClose={() => setSelectedBlob(null)}
+          onDownload={handleDownload}
+          isDownloading={downloading === selectedBlob.name}
+        />
       )}
     </div>
   )
