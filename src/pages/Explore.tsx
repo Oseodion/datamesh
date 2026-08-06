@@ -19,33 +19,6 @@ const getFileName = (fullName: string) => {
   return parts[parts.length - 1] || fullName
 }
 
-// Magic-byte signatures used to sanity-check downloads before saving them.
-// The marketplace lists blobs uploaded by any app on the shared shelbynet
-// network, and some of that third-party content is encrypted or was
-// uploaded malformed at the source — bytes we have no way to decode. This
-// check exists to surface that clearly instead of silently saving garbage.
-const FILE_SIGNATURES: Record<string, number[]> = {
-  png: [0x89, 0x50, 0x4e, 0x47],
-  jpg: [0xff, 0xd8, 0xff],
-  jpeg: [0xff, 0xd8, 0xff],
-  gif: [0x47, 0x49, 0x46, 0x38],
-  pdf: [0x25, 0x50, 0x44, 0x46],
-  zip: [0x50, 0x4b, 0x03, 0x04],
-}
-
-const matchesFileSignature = (bytes: Uint8Array, ext: string): boolean => {
-  const signature = FILE_SIGNATURES[ext]
-  if (!signature) return true // unknown type — nothing to check against
-  return signature.every((byte, i) => bytes[i] === byte)
-}
-
-const MIME_TYPES: Record<string, string> = {
-  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
-  pdf: 'application/pdf', zip: 'application/zip', json: 'application/json',
-  csv: 'text/csv', txt: 'text/plain', md: 'text/markdown',
-  mp4: 'video/mp4', mov: 'video/quicktime',
-}
-
 type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
 
 const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
@@ -187,38 +160,23 @@ export default function Explore() {
       const uint8 = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0))
       let offset = 0
       for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
-
-      const fileName = getFileName(blob.name)
-      const ext = fileName.split('.').pop()?.toLowerCase() || ''
-      if (!matchesFileSignature(uint8, ext)) {
-        setDownloadError(`"${fileName}" could not be verified as a valid .${ext} file — it may be encrypted or corrupted at the source. Download cancelled.`)
-        setDownloading(null)
-        return
-      }
-
-      const mimeType = MIME_TYPES[ext] || 'application/octet-stream'
-      const url = URL.createObjectURL(new Blob([uint8], { type: mimeType }))
+      const url = URL.createObjectURL(new Blob([uint8]))
       const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent)
       if (isMobile) {
         window.open(url, '_blank')
-        setTimeout(() => URL.revokeObjectURL(url), 60000)
+        setTimeout(() => URL.revokeObjectURL(url), 5000)
       } else {
-        // No `target="_blank"` here: combined with `download`, Safari can ignore
-        // the download attribute and navigate the blob URL into a new tab
-        // instead of saving it. And the revoke is deferred well past any
-        // save-dialog delay — revoking too early truncates/corrupts the file
-        // if the browser hasn't finished reading the blob yet.
         const a = document.createElement('a')
         a.href = url
-        a.download = fileName
+        a.download = getFileName(blob.name)
+        a.target = '_blank'
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
-        setTimeout(() => URL.revokeObjectURL(url), 60000)
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
     } catch (err) {
       console.error('Download failed:', err)
-      setDownloadError(`Download failed: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
     setDownloading(null)
   }
