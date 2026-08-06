@@ -15,11 +15,11 @@ importers:
         specifier: ^7.2.8
         version: 7.2.8(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@telegram-apps/bridge@1.9.2)(@types/react@19.2.14)(@wallet-standard/core@1.0.3)(react@18.3.1)
       '@shelby-protocol/react':
-        specifier: ^1.0.3
-        version: 1.0.3(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@aptos-labs/wallet-adapter-react@7.2.8(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@telegram-apps/bridge@1.9.2)(@types/react@19.2.14)(@wallet-standard/core@1.0.3)(react@18.3.1))(@shelby-protocol/sdk@0.2.4(@aptos-labs/ts-sdk@6.2.0(got@11.8.6)))(@tanstack/react-query@5.90.21(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+        specifier: ^4.0.1
+        version: 4.0.1(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@aptos-labs/wallet-adapter-react@7.2.8(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@telegram-apps/bridge@1.9.2)(@types/react@19.2.14)(@wallet-standard/core@1.0.3)(react@18.3.1))(@shelby-protocol/sdk@0.6.0(@aptos-labs/ts-sdk@6.2.0(got@11.8.6)))(@tanstack/react-query@5.90.21(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       '@shelby-protocol/sdk':
-        specifier: ^0.2.4
-        version: 0.2.4(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))
+        specifier: ^0.6.0
+        version: 0.6.0(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))
       '@tanstack/react-query':
         specifier: ^5.90.21
         version: 5.90.21(react@18.3.1)
@@ -111,6 +111,7 @@ packages:
   '@aptos-labs/ts-sdk@6.2.0':
     resolution: {integrity: sha512-DXzftTnIONrerI1X2Gfc/OFwrUoMXIKjDuupBuU0F67W5wrq9xyM5qB6Q89Biub6A3M3Y4kS96x84VH5CN2anA==}
     engines: {node: '>=20.0.0'}
+    deprecated: use 6.3.1 instead
 
   '@aptos-labs/wallet-adapter-core@7.10.2':
     resolution: {integrity: sha512-8my6jCfjLT0HqShGbnKXnqoERA1dTYuiH4of5WHEGHsB5OxYI5o+NHnDyCf/LQGtsZ8tEGaU5pOE+kGgFnlV8g==}
@@ -210,6 +211,9 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@bufbuild/protobuf@2.13.0':
+    resolution: {integrity: sha512-acq7c49vxfm1ggJ95P70TX7ABDM0vxr1SYD3BB0o0jnBLB4OAqeHyKuN+cD3w80gXEDQ2zxHpR6CUeA+O/aU9g==}
 
   '@esbuild/aix-ppc64@0.27.4':
     resolution: {integrity: sha512-cQPwL2mp2nSmHHJlCyoXgHGhbEPMrEEU5xhkcy3Hs/O7nGZqEpZ2sUtLaL9MORLtDfRvVl2/3PAuEkYZH0Ty8Q==}
@@ -664,15 +668,15 @@ packages:
   '@scure/bip39@1.6.0':
     resolution: {integrity: sha512-+lF0BbLiJNwVlev4eKelw1WWLaiKXw7sSl8T6FvBlWkdX+94aGJ4o8XjUdlyhTCjd8c+B3KT3JfS8P0bLRNU6A==}
 
-  '@shelby-protocol/clay-codes@0.0.2':
-    resolution: {integrity: sha512-kvh59DNO84NjDM/TEJwWmTsrJi859wLEmAMuIa8xM417/qPgi+gjkg4UweUu2LDXdkt4kDnJdreB7ziyJJpglw==}
+  '@shelby-protocol/clay-codes@0.0.3':
+    resolution: {integrity: sha512-Lqrn7/B+mbLAhbeU6G83q/zqL2MFYFJO2GlHJZUv1PydL4keg5+t/2gUT8K/sgjdW01drmYbI6IBMNKFyUF1iQ==}
 
-  '@shelby-protocol/react@1.0.3':
-    resolution: {integrity: sha512-QT7g9ytKrjQ/6LNtlCYjSvMVYbMYfhTUTqp6zYqv2Y0N7im8Htco91/qEoProRwrRz+24oYbMNgAJLmSXWq1Uw==}
+  '@shelby-protocol/react@4.0.1':
+    resolution: {integrity: sha512-k0I90ImhD7+SXDttzmc6lYHFZDn/wr8YcfAORPYCHQwk8cGPOAxn3zKoj+6fNKkEgNG7L7bX9V0eYnMFjGMujA==}
     peerDependencies:
-      '@aptos-labs/ts-sdk': '>=5.0.0'
+      '@aptos-labs/ts-sdk': ^5.2.1 || ^6.0.0
       '@aptos-labs/wallet-adapter-react': ^6.0.0 || ^7.0.0
-      '@shelby-protocol/sdk': 0.2.3
+      '@shelby-protocol/sdk': '>=0.5.0 <1.0.0'
       '@tanstack/react-query': '>=5.0.0'
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
@@ -684,10 +688,10 @@ packages:
   '@shelby-protocol/reed-solomon@0.0.1':
     resolution: {integrity: sha512-Li+7Uj2LLe247YppsZDbZdnyhxGAmTBOx14QPvLNJzeq1lCmjeV7X2BtRzlvyElsvymQQI/WWcKIHu21ysCR9g==}
 
-  '@shelby-protocol/sdk@0.2.4':
-    resolution: {integrity: sha512-9IAiHCnUFWl1Y32BKi97sdPYb+5iPkTZbsf3iiEbpvnuWw9LOPcL7FRZ9DSTm63BK+4hBzbvPvNRGtukbpmR6g==}
+  '@shelby-protocol/sdk@0.6.0':
+    resolution: {integrity: sha512-tqpq7LD9QDr5aJJRuf/PUx7FBP3sBZPzZdtQZJRSDcI/63Smw3zw7sMgGtZpYqzLQZjaN3kwSzl3vCpcvdve8g==}
     peerDependencies:
-      '@aptos-labs/ts-sdk': ^2.0.1 || ^3.0.0 || ^4.0.0 || ^5.0.0
+      '@aptos-labs/ts-sdk': ^5.2.1 || ^6.0.0
 
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
@@ -2012,10 +2016,12 @@ packages:
 
   uuid@10.0.0:
     resolution: {integrity: sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   vite-plugin-node-polyfills@0.25.0:
@@ -2315,6 +2321,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@bufbuild/protobuf@2.13.0': {}
 
   '@esbuild/aix-ppc64@0.27.4':
     optional: true
@@ -2635,12 +2643,12 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
-  '@shelby-protocol/clay-codes@0.0.2': {}
+  '@shelby-protocol/clay-codes@0.0.3': {}
 
-  '@shelby-protocol/react@1.0.3(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@aptos-labs/wallet-adapter-react@7.2.8(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@telegram-apps/bridge@1.9.2)(@types/react@19.2.14)(@wallet-standard/core@1.0.3)(react@18.3.1))(@shelby-protocol/sdk@0.2.4(@aptos-labs/ts-sdk@6.2.0(got@11.8.6)))(@tanstack/react-query@5.90.21(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
+  '@shelby-protocol/react@4.0.1(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@aptos-labs/wallet-adapter-react@7.2.8(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))(@telegram-apps/bridge@1.9.2)(@types/react@19.2.14)(@wallet-standard/core@1.0.3)(react@18.3.1))(@shelby-protocol/sdk@0.6.0(@aptos-labs/ts-sdk@6.2.0(got@11.8.6)))(@tanstack/react-query@5.90.21(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)':
     dependencies:
       '@aptos-labs/ts-sdk': 6.2.0(got@11.8.6)
-      '@shelby-protocol/sdk': 0.2.4(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))
+      '@shelby-protocol/sdk': 0.6.0(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))
       '@tanstack/react-query': 5.90.21(react@18.3.1)
       p-limit: 7.3.0
       react: 18.3.1
@@ -2651,10 +2659,11 @@ snapshots:
 
   '@shelby-protocol/reed-solomon@0.0.1': {}
 
-  '@shelby-protocol/sdk@0.2.4(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))':
+  '@shelby-protocol/sdk@0.6.0(@aptos-labs/ts-sdk@6.2.0(got@11.8.6))':
     dependencies:
       '@aptos-labs/ts-sdk': 6.2.0(got@11.8.6)
-      '@shelby-protocol/clay-codes': 0.0.2
+      '@bufbuild/protobuf': 2.13.0
+      '@shelby-protocol/clay-codes': 0.0.3
       '@shelby-protocol/reed-solomon': 0.0.1
       graphql: 16.13.1
       graphql-request: 7.4.0(graphql@16.13.1)
