@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Order_By } from '@shelby-protocol/sdk/browser'
 import { shelbynetClient } from '../lib/shelby'
 
 const colorForType = (name: string) => {
@@ -104,6 +105,7 @@ const PAGE_SIZE = 50
 
 export default function Explore() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [blobs, setBlobs] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -121,10 +123,24 @@ export default function Explore() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // Debounce the search box, and reset back to page 0 whenever the search
+  // term actually changes — batched into the same tick so this doesn't
+  // trigger the fetch effect below twice.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(0)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   useEffect(() => {
     setIsLoading(true)
     setError(false)
+    const trimmedSearch = debouncedSearch.trim()
     shelbynetClient.coordination.getBlobs({
+      where: trimmedSearch ? { object_name: { _ilike: `%${trimmedSearch}%` } } : undefined,
+      orderBy: { created_at: Order_By.Desc },
       pagination: { limit: PAGE_SIZE + 1, offset: page * PAGE_SIZE },
     })
       .then(data => {
@@ -134,11 +150,10 @@ export default function Explore() {
         setIsLoading(false)
       })
       .catch(err => { console.error('Load error:', err); setError(true); setIsLoading(false) })
-  }, [page])
+  }, [page, debouncedSearch])
 
   const filtered = blobs.filter(blob => {
     const fileName = getFileName(blob.name)
-    if (!fileName.toLowerCase().includes(search.toLowerCase())) return false
     if (typeFilter !== 'all' && categoryForFile(fileName) !== typeFilter) return false
     return true
   })
