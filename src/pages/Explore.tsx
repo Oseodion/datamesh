@@ -78,60 +78,6 @@ function FileIcon({ kind, color, size = 18 }: { kind: IconKind; color: string; s
   }
 }
 
-function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
-  const [url, setUrl] = useState<string | null>(null)
-  const [failed, setFailed] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    let objectUrl: string | null = null
-    const load = async () => {
-      try {
-        const ownerBytes = blob.owner?.data || {}
-        const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
-        const result = await shelbynetClient.download({ account, blobName: blob.blobNameSuffix })
-        const reader = result.readable.getReader()
-        const chunks: Uint8Array[] = []
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          chunks.push(value)
-        }
-        const uint8 = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0))
-        let offset = 0
-        for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
-        objectUrl = URL.createObjectURL(new Blob([uint8]))
-        if (cancelled) URL.revokeObjectURL(objectUrl)
-        else setUrl(objectUrl)
-      } catch (err) {
-        console.error('Thumbnail load failed:', err)
-        if (!cancelled) setFailed(true)
-      }
-    }
-    load()
-    return () => {
-      cancelled = true
-      if (objectUrl) URL.revokeObjectURL(objectUrl)
-    }
-  }, [blob])
-
-  if (failed) {
-    return (
-      <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <FileIcon kind="image" color={colorForType(fileName)} size={28} />
-      </div>
-    )
-  }
-
-  return url ? (
-    <img src={url} alt={fileName} style={{ width: '100%', height: 140, objectFit: 'cover' as const, borderRadius: 10, border: '1px solid var(--border)', display: 'block' }} />
-  ) : (
-    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
-      Loading preview...
-    </div>
-  )
-}
-
 type TypeFilter = 'all' | 'images' | 'documents' | 'video' | 'other'
 
 const TYPE_FILTERS: { key: TypeFilter; label: string }[] = [
@@ -315,19 +261,12 @@ export default function Explore() {
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                 >
-                  {kind === 'image' ? (
-                    <div style={{ position: 'relative' as const }}>
-                      <ImageThumbnail blob={blob} fileName={fileName} />
-                      <span style={{ position: 'absolute' as const, top: 8, right: 8, fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#0f0f0fcc', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: color + '18', border: '1px solid ' + color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <FileIcon kind={kind} color={color} />
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 10, background: color + '18', border: '1px solid ' + color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <FileIcon kind={kind} color={color} />
-                      </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#4ade8018', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
-                    </div>
-                  )}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#4ade8018', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
+                  </div>
 
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{fileName}</div>
