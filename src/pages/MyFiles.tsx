@@ -9,8 +9,10 @@ const colorForType = (name: string) => {
   const map: Record<string, string> = {
     CSV: '#f472b6', PNG: '#4ade80', ZIP: '#60a5fa', PDF: '#f472b6',
     MP4: '#a78bfa', JSON: '#4ade80', TAR: '#60a5fa', BIN: '#a78bfa',
-    JPEG: '#4ade80', JPG: '#4ade80', TXT: '#60a5fa', VCF: '#f472b6',
-    PPTX: '#f472b6', DOCX: '#60a5fa', XLSX: '#4ade80',
+    JPEG: '#4ade80', JPG: '#4ade80', GIF: '#4ade80', WEBP: '#4ade80',
+    TXT: '#60a5fa', VCF: '#f472b6', PPTX: '#f472b6', DOCX: '#60a5fa', XLSX: '#4ade80',
+    JS: '#a78bfa', JSX: '#a78bfa', TS: '#a78bfa', TSX: '#a78bfa', PY: '#a78bfa',
+    GZ: '#60a5fa', RAR: '#60a5fa', '7Z': '#60a5fa',
   }
   return map[ext] || '#8a7a70'
 }
@@ -23,6 +25,64 @@ const formatSize = (bytes: number) => {
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
 const isImageFile = (name: string) => IMAGE_EXTS.includes(name.split('.').pop()?.toLowerCase() || '')
+
+type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
+
+const CODE_EXTS = ['js', 'jsx', 'ts', 'tsx', 'py', 'json']
+const ARCHIVE_EXTS = ['zip', 'tar', 'gz', 'rar', '7z']
+
+const iconKindForFile = (name: string): IconKind => {
+  const ext = name.split('.').pop()?.toLowerCase() || ''
+  if (isImageFile(name)) return 'image'
+  if (ext === 'pdf') return 'pdf'
+  if (CODE_EXTS.includes(ext)) return 'code'
+  if (ARCHIVE_EXTS.includes(ext)) return 'archive'
+  return 'other'
+}
+
+function FileIcon({ kind, color, size = 18 }: { kind: IconKind; color: string; size?: number }) {
+  const props = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: color, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const }
+  switch (kind) {
+    case 'image':
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      )
+    case 'pdf':
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="8" y1="13" x2="16" y2="13"/>
+          <line x1="8" y1="17" x2="16" y2="17"/>
+        </svg>
+      )
+    case 'code':
+      return (
+        <svg {...props}>
+          <polyline points="16 18 22 12 16 6"/>
+          <polyline points="8 6 2 12 8 18"/>
+        </svg>
+      )
+    case 'archive':
+      return (
+        <svg {...props}>
+          <rect x="2" y="3" width="20" height="5" rx="1"/>
+          <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/>
+          <path d="M10 12h4"/>
+        </svg>
+      )
+    default:
+      return (
+        <svg {...props}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        </svg>
+      )
+  }
+}
 
 function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -162,6 +222,7 @@ export default function MyFiles() {
           const fileName = blob.blobNameSuffix || blob.name
           const color = colorForType(fileName)
           const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE'
+          const kind = iconKindForFile(fileName)
           const isDownloading = downloading === blob.blobNameSuffix
 
           return (
@@ -176,9 +237,7 @@ export default function MyFiles() {
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ width: 42, height: 42, borderRadius: 10, background: color + '18', border: '1px solid ' + color + '30', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  </svg>
+                  <FileIcon kind={kind} color={color} />
                 </div>
                 {blob.isWritten
                   ? <span style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', background: '#60a5fa18', border: '1px solid #60a5fa30', padding: '3px 8px', borderRadius: 20 }}>Yours</span>
@@ -186,8 +245,12 @@ export default function MyFiles() {
                 }
               </div>
 
-              {blob.isWritten && isImageFile(fileName) && (
+              {blob.isWritten && isImageFile(fileName) ? (
                 <ImageThumbnail blob={blob} fileName={fileName} />
+              ) : (
+                <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <FileIcon kind={kind} color={color} size={32} />
+                </div>
               )}
 
               <div>
