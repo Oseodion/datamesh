@@ -19,6 +19,26 @@ const getFileName = (fullName: string) => {
   return parts[parts.length - 1] || fullName
 }
 
+// Magic-byte signatures used to sanity-check downloads before saving them.
+// The marketplace lists blobs uploaded by any app on the shared shelbynet
+// network, and some of that third-party content is encrypted or was
+// uploaded malformed at the source — bytes we have no way to decode. This
+// check exists to surface that clearly instead of silently saving garbage.
+const FILE_SIGNATURES: Record<string, number[]> = {
+  png: [0x89, 0x50, 0x4e, 0x47],
+  jpg: [0xff, 0xd8, 0xff],
+  jpeg: [0xff, 0xd8, 0xff],
+  gif: [0x47, 0x49, 0x46, 0x38],
+  pdf: [0x25, 0x50, 0x44, 0x46],
+  zip: [0x50, 0x4b, 0x03, 0x04],
+}
+
+const matchesFileSignature = (bytes: Uint8Array, ext: string): boolean => {
+  const signature = FILE_SIGNATURES[ext]
+  if (!signature) return true // unknown type — nothing to check against
+  return signature.every((byte, i) => bytes[i] === byte)
+}
+
 type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
 
 const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
@@ -113,6 +133,7 @@ export default function Explore() {
   const [priceFilter, setPriceFilter] = useState<'free' | 'paid'>('free')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 400)
@@ -159,6 +180,15 @@ export default function Explore() {
       const uint8 = new Uint8Array(chunks.reduce((acc, c) => acc + c.length, 0))
       let offset = 0
       for (const chunk of chunks) { uint8.set(chunk, offset); offset += chunk.length }
+
+      const fileName = getFileName(blob.name)
+      const ext = fileName.split('.').pop()?.toLowerCase() || ''
+      if (!matchesFileSignature(uint8, ext)) {
+        setDownloadError(`"${fileName}" could not be verified as a valid .${ext} file — it may be encrypted or corrupted at the source. Download cancelled.`)
+        setDownloading(null)
+        return
+      }
+
       const url = URL.createObjectURL(new Blob([uint8]))
       const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent)
       if (isMobile) {
@@ -176,6 +206,7 @@ export default function Explore() {
       }
     } catch (err) {
       console.error('Download failed:', err)
+      setDownloadError(`Download failed: ${err instanceof Error ? err.message : 'unknown error'}`)
     }
     setDownloading(null)
   }
@@ -322,6 +353,24 @@ export default function Explore() {
             <polyline points="18 15 12 9 6 15"/>
           </svg>
         </button>
+      )}
+
+      {downloadError && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 101,
+          maxWidth: 420, width: 'calc(100% - 48px)',
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+          background: 'var(--surface)', border: '1px solid #f8717140', borderRadius: 12,
+          padding: '14px 16px', boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, flex: 1 }}>{downloadError}</div>
+          <button onClick={() => setDownloadError(null)} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', flexShrink: 0, padding: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
       )}
     </div>
   )
