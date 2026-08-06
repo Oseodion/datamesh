@@ -39,6 +39,13 @@ const matchesFileSignature = (bytes: Uint8Array, ext: string): boolean => {
   return signature.every((byte, i) => bytes[i] === byte)
 }
 
+const MIME_TYPES: Record<string, string> = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
+  pdf: 'application/pdf', zip: 'application/zip', json: 'application/json',
+  csv: 'text/csv', txt: 'text/plain', md: 'text/markdown',
+  mp4: 'video/mp4', mov: 'video/quicktime',
+}
+
 type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
 
 const PREVIEW_IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
@@ -189,20 +196,25 @@ export default function Explore() {
         return
       }
 
-      const url = URL.createObjectURL(new Blob([uint8]))
+      const mimeType = MIME_TYPES[ext] || 'application/octet-stream'
+      const url = URL.createObjectURL(new Blob([uint8], { type: mimeType }))
       const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent)
       if (isMobile) {
         window.open(url, '_blank')
-        setTimeout(() => URL.revokeObjectURL(url), 5000)
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
       } else {
+        // No `target="_blank"` here: combined with `download`, Safari can ignore
+        // the download attribute and navigate the blob URL into a new tab
+        // instead of saving it. And the revoke is deferred well past any
+        // save-dialog delay — revoking too early truncates/corrupts the file
+        // if the browser hasn't finished reading the blob yet.
         const a = document.createElement('a')
         a.href = url
-        a.download = getFileName(blob.name)
-        a.target = '_blank'
+        a.download = fileName
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
       }
     } catch (err) {
       console.error('Download failed:', err)
