@@ -1,5 +1,5 @@
 import { Network } from '@aptos-labs/ts-sdk'
-import { getShelbyBlobExplorerUrl } from '@shelby-protocol/sdk/browser'
+import { getShelbyAccountExplorerUrl } from '@shelby-protocol/sdk/browser'
 
 interface Props {
   blob: any
@@ -130,7 +130,12 @@ export default function FileDetailModal({ blob, onClose, onDownload, isDownloadi
   const kind = iconKindForFile(fileName)
   const ownerAddress = blob.owner?.toString?.() ?? 'Unknown'
   const commitment = blob.blobMerkleRoot ? hexFromBytes(blob.blobMerkleRoot) : null
-  const blobUrl = getShelbyBlobExplorerUrl(Network.SHELBYNET, ownerAddress, blob.blobNameSuffix ?? blob.name)
+  // The SDK's getShelbyBlobExplorerUrl generates .../account/{address}/blob/{name},
+  // which 404s against the live explorer. The explorer's actual blob-detail route
+  // (confirmed by observing its own in-app navigation) is the account/blobs page
+  // with the blob name as a query param, not a path segment.
+  const blobName = blob.blobNameSuffix ?? blob.name
+  const blobUrl = `${getShelbyAccountExplorerUrl(Network.SHELBYNET, ownerAddress)}/blobs?name=${encodeURIComponent(blobName)}`
   const canDownload = blob.isWritten !== false
 
   return (
