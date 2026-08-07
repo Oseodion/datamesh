@@ -10,7 +10,11 @@
 //
 // Env vars:
 //   SHELBY_PRIVATE_KEY   (required) Ed25519 private key, hex, with or without 0x prefix
-//   SHELBY_API_KEY       (optional) API key for the shelbynet RPC/indexer
+//   SHELBY_API_KEY       (optional) API key for the shelbynet RPC/indexer.
+//                         Note: this script does NOT read `shelby init`'s
+//                         ~/.shelby/config.yaml — that key only configures the
+//                         `shelby` CLI. Export SHELBY_API_KEY separately (or
+//                         copy the same key value into it) for this script.
 
 import { readFile } from 'node:fs/promises'
 import { basename } from 'node:path'
@@ -35,7 +39,9 @@ Required environment variable:
   SHELBY_PRIVATE_KEY  Ed25519 private key (hex, with or without 0x prefix)
 
 Optional environment variable:
-  SHELBY_API_KEY      API key for the shelbynet RPC/indexer
+  SHELBY_API_KEY      API key for the shelbynet RPC/indexer (not read from
+                      ~/.shelby/config.yaml — that's the shelby CLI's own
+                      config; export SHELBY_API_KEY separately for this script)
 
 Example:
   SHELBY_PRIVATE_KEY=0xabc... node scripts/upload-to-shelbynet.mjs ./photo.png ./notes.txt --expires 30 --fund
@@ -88,11 +94,18 @@ async function main() {
   const address = account.accountAddress.toString()
   console.log(`Signing as ${address}`)
 
+  const apiKey = process.env.SHELBY_API_KEY
+  if (!apiKey) {
+    console.warn('Warning: SHELBY_API_KEY is not set — requests will be anonymous and may be rate-limited.')
+  }
+
   // 0.6.0 requires writes to resolve a location (region) hint, or the on-chain
   // commit aborts with "No write location could be resolved". Shelbynet
   // currently only advertises one location, but we resolve it dynamically
   // (same approach as `shelby locations`) rather than hardcoding the name.
-  const bootstrapClient = new ShelbyClient({ network: Network.SHELBYNET })
+  // This lookup client must carry the same apiKey as the main client below —
+  // otherwise it goes out unauthenticated and hits anonymous rate limits.
+  const bootstrapClient = new ShelbyClient({ network: Network.SHELBYNET, apiKey })
   const locations = await bootstrapClient.metadata.getLocationNames()
   if (locations.length === 0) {
     console.error('No Shelby write locations are currently available on shelbynet.')
@@ -103,7 +116,7 @@ async function main() {
 
   const client = new ShelbyClient({
     network: Network.SHELBYNET,
-    apiKey: process.env.SHELBY_API_KEY,
+    apiKey,
     locationHint,
   })
 
