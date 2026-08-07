@@ -3,6 +3,7 @@ import { useWallet } from '@aptos-labs/wallet-adapter-react'
 import { Network } from '@aptos-labs/ts-sdk'
 import { getShelbyAccountExplorerUrl } from '@shelby-protocol/sdk/browser'
 import { shelbynetClient } from '../lib/shelby'
+import FileDetailModal from '../components/FileDetailModal'
 
 const colorForType = (name: string) => {
   const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
@@ -138,6 +139,7 @@ export default function MyFiles() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(false)
   const [downloading, setDownloading] = useState<string | null>(null)
+  const [selectedBlob, setSelectedBlob] = useState<any | null>(null)
 
   useEffect(() => {
     if (!account) return
@@ -226,11 +228,11 @@ export default function MyFiles() {
           const isDownloading = downloading === blob.blobNameSuffix
 
           return (
-            <div key={blob.name} style={{
+            <div key={blob.name} onClick={() => setSelectedBlob(blob)} style={{
               background: 'var(--surface)', border: '1px solid var(--border)',
               borderRadius: 14, padding: '20px',
               display: 'flex', flexDirection: 'column' as const, gap: 12,
-              transition: 'border-color .15s',
+              transition: 'border-color .15s', cursor: 'pointer',
             }}
               onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border2)'}
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
@@ -260,7 +262,7 @@ export default function MyFiles() {
 
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                 {blob.isWritten && (
-                  <button onClick={() => handleDownload(blob)} disabled={isDownloading} style={{
+                  <button onClick={e => { e.stopPropagation(); handleDownload(blob) }} disabled={isDownloading} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                     background: isDownloading ? 'var(--surface2)' : 'var(--accent)',
@@ -275,7 +277,7 @@ export default function MyFiles() {
                     {isDownloading ? 'Downloading...' : 'Download'}
                   </button>
                 )}
-                <a href={getShelbyAccountExplorerUrl(Network.SHELBYNET, account?.address?.toString() ?? '')} target="_blank" rel="noopener noreferrer" style={{
+                <a onClick={e => e.stopPropagation()} href={getShelbyAccountExplorerUrl(Network.SHELBYNET, account?.address?.toString() ?? '')} target="_blank" rel="noopener noreferrer" style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '9px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600,
                   background: 'var(--surface2)', color: '#60a5fa',
@@ -293,6 +295,17 @@ export default function MyFiles() {
           )
         })}
       </div>
+
+      {selectedBlob && (
+        <FileDetailModal
+          blob={selectedBlob}
+          onClose={() => setSelectedBlob(null)}
+          onDownload={handleDownload}
+          isDownloading={downloading === selectedBlob.blobNameSuffix}
+          badgeLabel={selectedBlob.isWritten ? 'Yours' : 'Pending'}
+          badgeColor={selectedBlob.isWritten ? '#60a5fa' : '#f59e0b'}
+        />
+      )}
     </div>
   )
 }

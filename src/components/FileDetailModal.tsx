@@ -1,11 +1,13 @@
 import { Network } from '@aptos-labs/ts-sdk'
-import { getShelbyAccountExplorerUrl } from '@shelby-protocol/sdk/browser'
+import { getShelbyBlobExplorerUrl } from '@shelby-protocol/sdk/browser'
 
 interface Props {
   blob: any
   onClose: () => void
   onDownload: (blob: any) => void
   isDownloading: boolean
+  badgeLabel?: string
+  badgeColor?: string
 }
 
 const getFileName = (fullName: string) => {
@@ -104,24 +106,32 @@ const truncateMiddle = (str: string, head = 10, tail = 8) =>
 const hexFromBytes = (bytes: Uint8Array) =>
   '0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
 
-const Row = ({ label, value, mono }: { label: string; value: string; mono?: boolean }) => (
+const Row = ({ label, value, mono, href }: { label: string; value: string; mono?: boolean; href?: string }) => (
   <div>
     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' as const, letterSpacing: 0.6, marginBottom: 4 }}>
       {label}
     </div>
-    <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: mono ? "'IBM Plex Mono', monospace" : undefined, wordBreak: 'break-all' as const }}>
-      {value}
-    </div>
+    {href ? (
+      <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#60a5fa', fontFamily: mono ? "'IBM Plex Mono', monospace" : undefined, wordBreak: 'break-all' as const, textDecoration: 'none' }}>
+        {value}
+      </a>
+    ) : (
+      <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: mono ? "'IBM Plex Mono', monospace" : undefined, wordBreak: 'break-all' as const }}>
+        {value}
+      </div>
+    )}
   </div>
 )
 
-export default function FileDetailModal({ blob, onClose, onDownload, isDownloading }: Props) {
+export default function FileDetailModal({ blob, onClose, onDownload, isDownloading, badgeLabel = 'Free', badgeColor = '#4ade80' }: Props) {
   const fileName = getFileName(blob.name)
   const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE'
   const color = colorForType(fileName)
   const kind = iconKindForFile(fileName)
   const ownerAddress = blob.owner?.toString?.() ?? 'Unknown'
   const commitment = blob.blobMerkleRoot ? hexFromBytes(blob.blobMerkleRoot) : null
+  const blobUrl = getShelbyBlobExplorerUrl(Network.SHELBYNET, ownerAddress, blob.blobNameSuffix ?? blob.name)
+  const canDownload = blob.isWritten !== false
 
   return (
     <div style={{
@@ -148,7 +158,7 @@ export default function FileDetailModal({ blob, onClose, onDownload, isDownloadi
           </div>
           <div style={{ minWidth: 0, paddingTop: 2 }}>
             <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', wordBreak: 'break-word' as const, marginBottom: 4 }}>{fileName}</div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#4ade80', background: '#4ade8018', border: '1px solid #4ade8030', padding: '3px 8px', borderRadius: 20 }}>Free</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: badgeColor, background: badgeColor + '18', border: '1px solid ' + badgeColor + '30', padding: '3px 8px', borderRadius: 20 }}>{badgeLabel}</span>
           </div>
         </div>
 
@@ -165,24 +175,27 @@ export default function FileDetailModal({ blob, onClose, onDownload, isDownloadi
               <Row label="Blob Commitment" value={truncateMiddle(commitment)} mono />
             </div>
           )}
+          <div style={{ gridColumn: '1 / -1' }}>
+            <Row label="Blob URL" value={truncateMiddle(blobUrl, 28, 12)} href={blobUrl} />
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, width: '100%' }}>
-          <button onClick={() => onDownload(blob)} disabled={isDownloading} style={{
+          <button onClick={() => onDownload(blob)} disabled={isDownloading || !canDownload} style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '11px 0', borderRadius: 10, fontSize: 14, fontWeight: 600,
-            background: isDownloading ? 'var(--surface2)' : 'var(--accent)',
-            color: isDownloading ? 'var(--muted)' : 'var(--on-accent)',
-            border: 'none', cursor: isDownloading ? 'not-allowed' : 'pointer',
+            background: (isDownloading || !canDownload) ? 'var(--surface2)' : 'var(--accent)',
+            color: (isDownloading || !canDownload) ? 'var(--muted)' : 'var(--on-accent)',
+            border: 'none', cursor: (isDownloading || !canDownload) ? 'not-allowed' : 'pointer',
           }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            {isDownloading ? 'Downloading...' : 'Download'}
+            {isDownloading ? 'Downloading...' : !canDownload ? 'Pending' : 'Download'}
           </button>
-          <a href={getShelbyAccountExplorerUrl(Network.SHELBYNET, ownerAddress)} target="_blank" rel="noopener noreferrer" style={{
+          <a href={blobUrl} target="_blank" rel="noopener noreferrer" style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             padding: '11px 0', borderRadius: 10, fontSize: 14, fontWeight: 600,
             background: 'var(--surface2)', color: '#60a5fa',
