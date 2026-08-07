@@ -53,19 +53,36 @@ export default function UploadModal({ onClose }: Props) {
     setUploadState('uploading')
     setErrorMessage('')
 
-    const buffer = await file.arrayBuffer()
-    const thirtyDaysMicros = 30 * 24 * 60 * 60 * 1_000_000
-    const expirationMicros = Date.now() * 1000 + thirtyDaysMicros
+    try {
+      // Without a location hint, the write has neither an account preference
+      // nor an explicit location, and the simulation aborts with "The account
+      // has no preference set and the write supplied no location input."
+      // Resolve one dynamically (same approach as the upload script and
+      // `shelby locations`) rather than hardcoding a name.
+      const locations = await shelbynetClient.metadata.getLocationNames()
+      const locationHint = locations[0]
+      if (!locationHint) {
+        throw new Error('No Shelby write locations are currently available.')
+      }
 
-    uploadBlobs({
-      // wallet-adapter-react bundles its own nested @aptos-labs/ts-sdk, so
-      // `account.address` is structurally a different (but functionally
-      // identical) AccountAddress class than the one @shelby-protocol/react's
-      // types expect from the top-level ts-sdk. Safe to cast across.
-      signer: { account: account.address as any, signAndSubmitTransaction },
-      blobs: [{ blobName: file.name, blobData: new Uint8Array(buffer) }],
-      expirationMicros,
-    })
+      const buffer = await file.arrayBuffer()
+      const thirtyDaysMicros = 30 * 24 * 60 * 60 * 1_000_000
+      const expirationMicros = Date.now() * 1000 + thirtyDaysMicros
+
+      uploadBlobs({
+        // wallet-adapter-react bundles its own nested @aptos-labs/ts-sdk, so
+        // `account.address` is structurally a different (but functionally
+        // identical) AccountAddress class than the one @shelby-protocol/react's
+        // types expect from the top-level ts-sdk. Safe to cast across.
+        signer: { account: account.address as any, signAndSubmitTransaction },
+        blobs: [{ blobName: file.name, blobData: new Uint8Array(buffer) }],
+        expirationMicros,
+        options: { locationHint },
+      })
+    } catch (err) {
+      setUploadState('error')
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to resolve an upload location')
+    }
   }, [account, file, signAndSubmitTransaction, uploadBlobs])
 
   const walletConnected = !!account
@@ -131,7 +148,7 @@ export default function UploadModal({ onClose }: Props) {
             </div>
 
             <div style={{ fontSize: 13, color: '#60a5fa', background: '#60a5fa14', border: '1px solid #60a5fa30', borderRadius: 10, padding: '10px 16px', width: '100%', textAlign: 'center' as const, lineHeight: 1.5 }}>
-              Uploading needs 2 approvals in your wallet — one to register the file, one to confirm the upload. That's normal, not an error.
+              Uploading needs 2 approvals in your wallet - one to register the file, one to confirm the upload. That's normal, not an error.
             </div>
 
             {!walletConnected && (
@@ -176,7 +193,7 @@ export default function UploadModal({ onClose }: Props) {
 
             {extraFilesNote && (
               <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center' as const }}>
-                Only one file at a time — the rest were skipped.
+                Only one file at a time - the rest were skipped.
               </div>
             )}
 
