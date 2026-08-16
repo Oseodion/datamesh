@@ -57,6 +57,12 @@ class Semaphore {
 const thumbnailSemaphore = new Semaphore(MAX_CONCURRENT_THUMBNAILS)
 
 const THUMBNAIL_SLOW_MS = 12000
+// If a request errors outright, back off and retry automatically rather than
+// making the user click a button. If a request just never resolves (genuinely
+// hung, not merely slow), give up waiting on it and start a fresh attempt.
+const THUMBNAIL_HARD_TIMEOUT_MS = 30000
+const MAX_AUTO_RETRIES = 3
+const RETRY_BACKOFF_MS = [2000, 4000, 8000]
 
 type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
 
@@ -120,17 +126,24 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
   const [url, setUrl] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const [slow, setSlow] = useState(false)
-  const [retryKey, setRetryKey] = useState(0)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     let objectUrl: string | null = null
-    setFailed(false)
     setSlow(false)
+    setFailed(false)
 
     const slowTimer = setTimeout(() => {
       if (!cancelled) setSlow(true)
     }, THUMBNAIL_SLOW_MS)
+
+    // Genuinely hung (not just slow) request: stop waiting on it and start
+    // a fresh attempt. The old request's result, if it ever arrives, is
+    // discarded by the `cancelled` check below.
+    const hardTimer = setTimeout(() => {
+      if (attempt < MAX_AUTO_RETRIES) setAttempt(a => a + 1)
+    }, THUMBNAIL_HARD_TIMEOUT_MS)
 
     const load = async () => {
       const release = await thumbnailSemaphore.acquire()
@@ -154,7 +167,13 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
         else setUrl(objectUrl)
       } catch (err) {
         console.error('Thumbnail load failed:', err)
-        if (!cancelled) setFailed(true)
+        if (cancelled) return
+        if (attempt < MAX_AUTO_RETRIES) {
+          const delay = RETRY_BACKOFF_MS[attempt] ?? RETRY_BACKOFF_MS[RETRY_BACKOFF_MS.length - 1]
+          setTimeout(() => { if (!cancelled) setAttempt(a => a + 1) }, delay)
+        } else {
+          setFailed(true)
+        }
       } finally {
         release()
       }
@@ -163,21 +182,23 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
     return () => {
       cancelled = true
       clearTimeout(slowTimer)
+      clearTimeout(hardTimer)
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [blob, retryKey])
+  }, [blob, attempt])
 
-  const retry = (e: React.MouseEvent) => {
+  const manualRetry = (e: React.MouseEvent) => {
     e.stopPropagation()
     setUrl(null)
-    setRetryKey(k => k + 1)
+    setFailed(false)
+    setAttempt(0)
   }
 
   if (failed) {
     return (
       <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
         Preview failed to load
-        <button onClick={retry} style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
+        <button onClick={manualRetry} style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
           Retry
         </button>
       </div>
@@ -189,13 +210,8 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
   }
 
   return (
-    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
-      {slow ? 'Taking longer than usual...' : 'Loading preview...'}
-      {slow && (
-        <button onClick={retry} style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
-          Retry
-        </button>
-      )}
+    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
+      {attempt > 0 ? `Retrying (${attempt}/${MAX_AUTO_RETRIES})...` : slow ? 'Taking longer than usual...' : 'Loading preview...'}
     </div>
   )
 }
