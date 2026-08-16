@@ -27,6 +27,37 @@ const formatSize = (bytes: number) => {
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp']
 const isImageFile = (name: string) => IMAGE_EXTS.includes(name.split('.').pop()?.toLowerCase() || '')
 
+// shelbynet's blob RPC has highly variable latency, and every thumbnail on the
+// page used to fire its download simultaneously, all competing for the same
+// slow connection. Cap how many load at once so the rest queue instead of
+// piling on and making each other slower.
+const MAX_CONCURRENT_THUMBNAILS = 3
+class Semaphore {
+  private available: number
+  private queue: (() => void)[] = []
+  constructor(count: number) { this.available = count }
+  acquire(): Promise<() => void> {
+    if (this.available > 0) {
+      this.available--
+      return Promise.resolve(() => this.release())
+    }
+    return new Promise(resolve => {
+      this.queue.push(() => {
+        this.available--
+        resolve(() => this.release())
+      })
+    })
+  }
+  private release() {
+    this.available++
+    const next = this.queue.shift()
+    if (next) next()
+  }
+}
+const thumbnailSemaphore = new Semaphore(MAX_CONCURRENT_THUMBNAILS)
+
+const THUMBNAIL_SLOW_MS = 12000
+
 type IconKind = 'image' | 'pdf' | 'code' | 'archive' | 'other'
 
 const CODE_EXTS = ['js', 'jsx', 'ts', 'tsx', 'py', 'json']
@@ -88,11 +119,22 @@ function FileIcon({ kind, color, size = 18 }: { kind: IconKind; color: string; s
 function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
   const [url, setUrl] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
+  const [slow, setSlow] = useState(false)
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     let objectUrl: string | null = null
+    setFailed(false)
+    setSlow(false)
+
+    const slowTimer = setTimeout(() => {
+      if (!cancelled) setSlow(true)
+    }, THUMBNAIL_SLOW_MS)
+
     const load = async () => {
+      const release = await thumbnailSemaphore.acquire()
+      if (cancelled) { release(); return }
       try {
         const ownerBytes = blob.owner?.data || {}
         const account = "0x" + Object.values(ownerBytes).map((b: any) => b.toString(16).padStart(2, "0")).join("")
@@ -113,22 +155,47 @@ function ImageThumbnail({ blob, fileName }: { blob: any; fileName: string }) {
       } catch (err) {
         console.error('Thumbnail load failed:', err)
         if (!cancelled) setFailed(true)
+      } finally {
+        release()
       }
     }
     load()
     return () => {
       cancelled = true
+      clearTimeout(slowTimer)
       if (objectUrl) URL.revokeObjectURL(objectUrl)
     }
-  }, [blob])
+  }, [blob, retryKey])
 
-  if (failed) return null
+  const retry = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setUrl(null)
+    setRetryKey(k => k + 1)
+  }
 
-  return url ? (
-    <img src={url} alt={fileName} style={{ width: '100%', height: 140, objectFit: 'cover' as const, borderRadius: 10, border: '1px solid var(--border)', display: 'block' }} />
-  ) : (
-    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: 'var(--muted)' }}>
-      Loading preview...
+  if (failed) {
+    return (
+      <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
+        Preview failed to load
+        <button onClick={retry} style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  if (url) {
+    return <img src={url} alt={fileName} style={{ width: '100%', height: 140, objectFit: 'cover' as const, borderRadius: 10, border: '1px solid var(--border)', display: 'block' }} />
+  }
+
+  return (
+    <div style={{ width: '100%', height: 140, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: 12, color: 'var(--muted)' }}>
+      {slow ? 'Taking longer than usual...' : 'Loading preview...'}
+      {slow && (
+        <button onClick={retry} style={{ fontSize: 11, fontWeight: 600, padding: '5px 12px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer' }}>
+          Retry
+        </button>
+      )}
     </div>
   )
 }
