@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
 import { Network } from '@aptos-labs/ts-sdk'
 import { getShelbyAccountExplorerUrl } from '@shelby-protocol/sdk/browser'
-import { shelbynetClient } from '../lib/shelby'
+import { listAccountFiles, shelbynetClient } from '../lib/shelby'
 import FileDetailModal from '../components/FileDetailModal'
 
 const colorForType = (name: string) => {
@@ -226,13 +226,22 @@ export default function MyFiles() {
 
   useEffect(() => {
     if (!account) return
+    let cancelled = false
     setIsLoading(true)
-    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
-      .then(data => {
-        setBlobs((data || []).filter((b: any) => !b.isDeleted))
+    setError(false)
+    listAccountFiles(account.address.toString())
+      .then(files => {
+        if (cancelled) return
+        setBlobs(files)
         setIsLoading(false)
       })
-      .catch(() => { setError(true); setIsLoading(false) })
+      .catch(err => {
+        console.error('Failed to load account files:', err)
+        if (cancelled) return
+        setError(true)
+        setIsLoading(false)
+      })
+    return () => { cancelled = true }
   }, [account])
 
   const handleDownload = async (blob: any) => {

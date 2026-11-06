@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Order_By } from '@shelby-protocol/sdk/browser'
-import { shelbynetClient } from '../lib/shelby'
+import { shelbynetClient, toShelbyFile } from '../lib/shelby'
 import FileDetailModal from '../components/FileDetailModal'
 
 const colorForType = (name: string) => {
@@ -140,13 +140,13 @@ export default function Explore() {
     setIsLoading(true)
     setError(false)
     const trimmedSearch = debouncedSearch.trim()
-    shelbynetClient.coordination.getBlobs({
-      where: trimmedSearch ? { object_name: { _ilike: `%${trimmedSearch}%` } } : undefined,
-      orderBy: { created_at: Order_By.Desc },
+    shelbynetClient.index.listObjects({
+      where: trimmedSearch ? { name: { _ilike: `%${trimmedSearch}%` } } : undefined,
+      orderBy: { committed_at_micros: Order_By.Desc },
       pagination: { limit: PAGE_SIZE + 1, offset: page * PAGE_SIZE },
     })
       .then(data => {
-        const all = (data || []).filter((b: any) => b.isWritten && !b.isDeleted)
+        const all = (data || []).map(toShelbyFile).filter(b => b.isWritten && !b.isDeleted)
         setHasMore(all.length > PAGE_SIZE)
         setBlobs(all.slice(0, PAGE_SIZE))
         setIsLoading(false)

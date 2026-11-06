@@ -169,9 +169,9 @@ export default function FileDetailModal({ blob, onClose, onDownload, isDownloadi
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
           <Row label="Type" value={ext} />
-          <Row label="Size" value={formatSize(blob.size)} />
-          <Row label="Uploaded" value={formatDate(blob.creationMicros)} />
-          <Row label="Expires" value={formatDate(blob.expirationMicros)} />
+          <Row label="Size" value={formatSize(blob.plaintextSize ?? blob.size)} />
+          <Row label="Uploaded" value={formatDate(blob.committedAtMicros ?? blob.creationMicros)} />
+          {blob.expirationMicros ? <Row label="Expires" value={formatDate(blob.expirationMicros)} /> : null}
           <div style={{ gridColumn: '1 / -1' }}>
             <Row label="Owner" value={truncateMiddle(ownerAddress)} mono />
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbynetClient } from '../lib/shelby'
+import { listAccountFiles } from '../lib/shelby'
 
 export default function Earnings() {
   const { connected, account } = useWallet()
@@ -8,9 +8,11 @@ export default function Earnings() {
 
   useEffect(() => {
     if (!account) return
-    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
-      .then(data => setBlobs((data || []).filter((b: any) => !b.isDeleted)))
-      .catch(() => {})
+    let cancelled = false
+    listAccountFiles(account.address.toString())
+      .then(files => { if (!cancelled) setBlobs(files) })
+      .catch(err => { console.error('Failed to load account files:', err) })
+    return () => { cancelled = true }
   }, [account])
 
   if (!connected) {
