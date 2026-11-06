@@ -10,22 +10,20 @@ interface Props {
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error'
 
-// Petra's approval window (2.7.6) renders entry-function args with
-// `JSON.stringify`. A bigint throws "Do not know how to serialize a BigInt"
-// during that render, and the popup stays blank. The register payload is only
-// strings, numbers, nulls, and byte arrays, so the first prompt renders. The
-// commit payload's blob uid is a bigint from BlobRegisteredEvent, so the
-// second prompt is the one that crashes.
+// Petra 2.7.6 draws the approval window by JSON.stringifying the entry
+// arguments. register_multiple_blobs already renders. commit_object_v2 does
+// not: its etag, empty metadata, and storage-provider signatures are
+// Uint8Arrays, and the ack bitmask is a U32 class. Typed arrays and Move
+// integer classes are not the plain values that prompt can render.
 //
-// Move integer classes such as U32 also fail earlier: structured clone turns
-// them into `{ value }`, and Petra's builder rejects that. Unwrap those to a
-// number, and turn bigints into decimal strings. Both forms encode to the
-// same BCS as the original arguments. Leave Uint8Array values alone: the SDK
-// treats a string vector<u8> as UTF-8, not hex.
-function plainMoveInteger(arg: unknown): unknown {
+// Convert only the commit payload. Bigints become decimal strings, U32 (and
+// other Move integer classes) become their numeric value, and every byte
+// array becomes an array of numbers. Petra encodes a number array as
+// vector<u8>. A hex string would be UTF-8 text, which would corrupt the etag
+// and the signatures, so bytes stay numbers.
+function plainScalar(arg: unknown): unknown {
   if (typeof arg === 'bigint') return arg.toString()
-  if (Array.isArray(arg)) return arg.map(plainMoveInteger)
-  if (typeof arg !== 'object' || arg === null || arg instanceof Uint8Array) return arg
+  if (typeof arg !== 'object' || arg === null) return arg
   const candidate = arg as { value?: unknown; serialize?: unknown }
   if (typeof candidate.serialize === 'function') {
     if (typeof candidate.value === 'number') return candidate.value
@@ -34,17 +32,24 @@ function plainMoveInteger(arg: unknown): unknown {
   return arg
 }
 
+function jsonArg(arg: unknown): unknown {
+  if (arg instanceof Uint8Array) return Array.from(arg)
+  if (Array.isArray(arg)) return arg.map(jsonArg)
+  return plainScalar(arg)
+}
+
+function isCommitPayload(data: object): boolean {
+  if (!('function' in data)) return false
+  const name = (data as { function?: unknown }).function
+  return typeof name === 'string' && name.includes('::commit_object')
+}
+
 function plainPayload<T>(data: T): T {
-  if (
-    data &&
-    typeof data === 'object' &&
-    'functionArguments' in data &&
-    Array.isArray((data as { functionArguments: unknown }).functionArguments)
-  ) {
-    const args = (data as { functionArguments: unknown[] }).functionArguments
-    return { ...data, functionArguments: args.map(plainMoveInteger) }
-  }
-  return data
+  if (!data || typeof data !== 'object' || !('functionArguments' in data)) return data
+  const args = (data as { functionArguments?: unknown }).functionArguments
+  if (!Array.isArray(args)) return data
+  if (!isCommitPayload(data)) return data
+  return { ...data, functionArguments: args.map(jsonArg) }
 }
 
 export default function UploadModal({ onClose }: Props) {
