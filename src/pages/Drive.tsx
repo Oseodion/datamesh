@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import CLIGuideModal from '../components/CLIGuideModal'
 import { useWallet } from '@aptos-labs/wallet-adapter-react'
-import { shelbynetClient } from '../lib/shelby'
+import { listAccountFiles } from '../lib/shelby'
 
 const typeColor: Record<string, string> = {
   PDF: '#f472b6', ZIP: '#60a5fa', CSV: '#f472b6',
@@ -17,10 +17,22 @@ export default function Drive() {
 
   useEffect(() => {
     if (!account) return
+    let cancelled = false
     setIsLoading(true)
-    shelbynetClient.coordination.getAccountBlobs({ account: account.address.toString() })
-      .then(data => { setBlobs((data || []).filter((b: any) => !b.isDeleted)); setIsLoading(false) })
-      .catch(() => { setError(true); setIsLoading(false) })
+    setError(false)
+    listAccountFiles(account.address.toString())
+      .then(files => {
+        if (cancelled) return
+        setBlobs(files)
+        setIsLoading(false)
+      })
+      .catch(err => {
+        console.error('Failed to load account files:', err)
+        if (cancelled) return
+        setError(true)
+        setIsLoading(false)
+      })
+    return () => { cancelled = true }
   }, [account])
 
   if (!connected) {

@@ -66,8 +66,6 @@ export default function UploadModal({ onClose }: Props) {
       }
 
       const buffer = await file.arrayBuffer()
-      const thirtyDaysMicros = 30 * 24 * 60 * 60 * 1_000_000
-      const expirationMicros = Date.now() * 1000 + thirtyDaysMicros
 
       uploadBlobs({
         // wallet-adapter-react bundles its own nested @aptos-labs/ts-sdk, so
@@ -76,7 +74,6 @@ export default function UploadModal({ onClose }: Props) {
         // types expect from the top-level ts-sdk. Safe to cast across.
         signer: { account: account.address as any, signAndSubmitTransaction },
         blobs: [{ blobName: file.name, blobData: new Uint8Array(buffer) }],
-        expirationMicros,
         options: { locationHint },
       })
     } catch (err) {
@@ -143,7 +140,7 @@ export default function UploadModal({ onClose }: Props) {
                 Upload to Shelby Network
               </div>
               <div style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, maxWidth: 360 }}>
-                Select a file to upload directly from your browser. Files are stored on the decentralized Shelby network with a 30-day expiration.
+                Select a file to upload directly from your browser. Files are stored on the decentralized Shelby network.
               </div>
             </div>
 

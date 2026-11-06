@@ -20,7 +20,7 @@ DataMesh lets users browse, download, upload, and manage files stored on Shelby'
 - Frontend: Vite + React + TypeScript
 - Storage Protocol: Shelby Protocol SDK (`@shelby-protocol/sdk`)
 - React Integration: `@shelby-protocol/react` with `@tanstack/react-query`
-- Blockchain: Aptos (Testnet)
+- Blockchain: Aptos (Shelbynet)
 - Wallet: Petra via `@aptos-labs/wallet-adapter-react`
 - API: Geomi RPC for authenticated Shelby indexer access
 
@@ -28,7 +28,7 @@ DataMesh lets users browse, download, upload, and manage files stored on Shelby'
 
 ### Browser
 
-Browser uploads are now supported directly in the app. Connect your Petra wallet on testnet, click Upload, select your files, and they will be uploaded to the Shelby network with a 30-day expiration. Your wallet must be set to testnet for the upload to proceed.
+Browser uploads are now supported directly in the app. Connect your Petra wallet, click Upload, select your files, and they will be uploaded to Shelbynet.
 
 ### CLI
 
@@ -51,7 +51,7 @@ shelby upload ~/path/to/file.png images/file.png -e "in 30 days" --assume-yes
 
 ## Environment Variables
 
-- `VITE_SHELBY_TESTNET_KEY`: API key for Shelby testnet access via Geomi RPC
+- `VITE_SHELBY_SHELBYNET_KEY`: API key for Shelbynet access via the Aptos indexer and Shelby RPC. A missing key still allows anonymous reads, which are rate-limited.
 
 ## Getting Started (Local Development)
 
