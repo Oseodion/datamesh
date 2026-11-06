@@ -10,6 +10,37 @@ interface Props {
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error'
 
+// Petra builds the approval transaction in the extension, after structured
+// clone. Aptos `U32` (and the other Move integer classes) do not survive that
+// boundary: they arrive as `{ value: n }`, and Petra's builder throws
+// "Type mismatch for argument N, expected 'number | string'". The approval
+// window then stays blank. The register payload is plain values, so the first
+// prompt renders; the commit payload's ack bitmask is a U32, so the second
+// prompt is the one that goes blank. Unwrap those classes to their numeric
+// value before the wallet sees them. The bytes match a real U32 argument.
+function plainMoveInteger(arg: unknown): unknown {
+  if (Array.isArray(arg)) return arg.map(plainMoveInteger)
+  if (typeof arg !== 'object' || arg === null || arg instanceof Uint8Array) return arg
+  const candidate = arg as { value?: unknown; serialize?: unknown }
+  if (typeof candidate.serialize === 'function' && typeof candidate.value === 'number') {
+    return candidate.value
+  }
+  return arg
+}
+
+function plainPayload<T>(data: T): T {
+  if (
+    data &&
+    typeof data === 'object' &&
+    'functionArguments' in data &&
+    Array.isArray((data as { functionArguments: unknown }).functionArguments)
+  ) {
+    const args = (data as { functionArguments: unknown[] }).functionArguments
+    return { ...data, functionArguments: args.map(plainMoveInteger) }
+  }
+  return data
+}
+
 export default function UploadModal({ onClose }: Props) {
   const { account, signAndSubmitTransaction } = useWallet()
   const [file, setFile] = useState<File | null>(null)
@@ -72,7 +103,11 @@ export default function UploadModal({ onClose }: Props) {
         // `account.address` is structurally a different (but functionally
         // identical) AccountAddress class than the one @shelby-protocol/react's
         // types expect from the top-level ts-sdk. Safe to cast across.
-        signer: { account: account.address as any, signAndSubmitTransaction },
+        signer: {
+          account: account.address as any,
+          signAndSubmitTransaction: (transaction) =>
+            signAndSubmitTransaction({ ...transaction, data: plainPayload(transaction.data) }),
+        },
         blobs: [{ blobName: file.name, blobData: new Uint8Array(buffer) }],
         options: { locationHint },
       })
