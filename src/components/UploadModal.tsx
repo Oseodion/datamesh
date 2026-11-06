@@ -10,20 +10,26 @@ interface Props {
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error'
 
-// Petra builds the approval transaction in the extension, after structured
-// clone. Aptos `U32` (and the other Move integer classes) do not survive that
-// boundary: they arrive as `{ value: n }`, and Petra's builder throws
-// "Type mismatch for argument N, expected 'number | string'". The approval
-// window then stays blank. The register payload is plain values, so the first
-// prompt renders; the commit payload's ack bitmask is a U32, so the second
-// prompt is the one that goes blank. Unwrap those classes to their numeric
-// value before the wallet sees them. The bytes match a real U32 argument.
+// Petra's approval window (2.7.6) renders entry-function args with
+// `JSON.stringify`. A bigint throws "Do not know how to serialize a BigInt"
+// during that render, and the popup stays blank. The register payload is only
+// strings, numbers, nulls, and byte arrays, so the first prompt renders. The
+// commit payload's blob uid is a bigint from BlobRegisteredEvent, so the
+// second prompt is the one that crashes.
+//
+// Move integer classes such as U32 also fail earlier: structured clone turns
+// them into `{ value }`, and Petra's builder rejects that. Unwrap those to a
+// number, and turn bigints into decimal strings. Both forms encode to the
+// same BCS as the original arguments. Leave Uint8Array values alone: the SDK
+// treats a string vector<u8> as UTF-8, not hex.
 function plainMoveInteger(arg: unknown): unknown {
+  if (typeof arg === 'bigint') return arg.toString()
   if (Array.isArray(arg)) return arg.map(plainMoveInteger)
   if (typeof arg !== 'object' || arg === null || arg instanceof Uint8Array) return arg
   const candidate = arg as { value?: unknown; serialize?: unknown }
-  if (typeof candidate.serialize === 'function' && typeof candidate.value === 'number') {
-    return candidate.value
+  if (typeof candidate.serialize === 'function') {
+    if (typeof candidate.value === 'number') return candidate.value
+    if (typeof candidate.value === 'bigint') return candidate.value.toString()
   }
   return arg
 }
